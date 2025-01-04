@@ -35,13 +35,15 @@ def mkdir(path):
         print('A new folder created.')
     else:
         print('Has already been created.')
-def edges2dict(edgeFinal):
+
+def edges2dict(edgeFinal): # 
     dicts = []
     n = len(edgeFinal)
     for i in range(0,n):
         dict1 = {'start':int(edgeFinal[i][0]), 'end':int(edgeFinal[i][1]),'inSample1':edgeFinal[i][3],'inSample2':edgeFinal[i][4]}
         dicts.append(dict1)
     return dicts
+
 def nodes2dict(nodeFinal):
     dicts = []
     n = len(nodeFinal)
@@ -67,6 +69,7 @@ def distancePair(loc1,loc2):    #loc1:[lon1,lat1]; loc2:[lon2,lat2]
     c = 2 * atan2(sqrt(a), sqrt(1-a))
     distance = R * c
     return distance
+
 # function 2 for node merge
 def neighborCell(nx,ny,x,y): # nx,ny: 100; x,y:0,1,2,...,100
     neighbor = list()
@@ -83,18 +86,27 @@ def neighborCell(nx,ny,x,y): # nx,ny: 100; x,y:0,1,2,...,100
 
 
 # the input is G1 (drive) and G6 (all private), and we need to generate a G = G1.union(G6) 
-def OSMnx_graph(G1):
+def OSMnx_graph(G1):  
     #======================================================= step 0
     #step_0.1 generate G: lo, la, nodeOsmid, edgeInfor
     G1nodes = list(G1.nodes(data = True))
+    for i in range(len(G1nodes)):
+        G1nodes[i][1]['osmid'] = G1nodes[i][0]
     G1_node = {str(G1nodes[i][1]['osmid']): (G1nodes[i][1]['lon'],G1nodes[i][1]['lat']) for i in range(len(G1nodes))} 
     G_node =copy.deepcopy(G1_node)
+    """
+    G_node 是一个字典 osmid: lon, lat
+    """
 
     #step_0.2 edges    
     G1edges = list(G1.edges(data = True))
     G1_edge = {(int(G1edges[i][0]),int(G1edges[i][1])):1 for i in range(len(G1edges))} #1: drivable
     G_edge =copy.deepcopy(G1_edge)
-    
+
+    """
+    G_edge 是一个字典 (osmid1, osmid2): 1
+    """
+
     # step_0: get 1）node_osmid; 2) node logitude; 3) node latitude; 4) edge (from,to)
     #step_0.3 input
     lo = [G_node[i][0] for i in G_node.keys()]
@@ -107,10 +119,10 @@ def OSMnx_graph(G1):
     R = 6373.0
     d = 0.03   # the merging threshold = 30 meters.  #change： July 15,2020
     dymax = 2*R*cos(laMax*math.pi/180.0)*math.pi/360.0
-    nX = math.floor((loMax-loMin)*dymax/d)
-    unitX = (loMax - loMin)/nX
-    nY = math.floor((laMax-laMin)*math.pi*R/(180.0*d))
-    unitY = (laMax - laMin)/nY
+    nX = math.floor((loMax-loMin)*dymax/d) # 表示网格在纬度上的数量
+    unitX = (loMax - loMin)/nX  # 单位网格的纬度上的长度
+    nY = math.floor((laMax-laMin)*math.pi*R/(180.0*d)) # 表示网格在经度上的数量
+    unitY = (laMax - laMin)/nY  # 单位网格的经度上的长度
     #  ===================================================================
     # step_2 go through all the nodes
     mapping = {}
@@ -131,7 +143,7 @@ def OSMnx_graph(G1):
             neighbor = neighborCell(nX,nY,i,j)
             neighborNodes = list()
             for k in range(len(neighbor)):
-                 neighborNodes = neighborNodes + mapping[neighbor[k]]
+                neighborNodes = neighborNodes + mapping[neighbor[k]]
             for n1 in range(len(mapping[(i,j)])):
                 for n2 in range(len(neighborNodes)):
                     node1 = mapping[(i,j)][n1]
@@ -173,7 +185,7 @@ def OSMnx_graph(G1):
     # =====================================================================
     # step_6 get final node      
     nodeFinal = list()
-    minOSMidClear = list(set(minOSMid))
+    minOSMidClear = list(set(minOSMid))   # 合并后节点的数组
     for i in range(len(minOSMidClear)):
         indexGet = minOSMid.index(minOSMidClear[i])
         nodeFinal.append((minOSMid[indexGet],loNew[indexGet],laNew[indexGet]))            
@@ -308,6 +320,21 @@ def getTrainIndex(n): #the input region is a n by n region.
     return trainIndex
 
 
+"""
+cities[i]
+0 - 编号
+1 - 城市名称
+2 - 国家
+3 - 纬度
+4 - 经度
+5 - 压缩的长度
+6 - 训练大小
+7 - 测试大小
+"""
+
+# cities ‘1', 'New york', 'USA', '40.73', '-73.94', '20', '300', '100' 
+
+
 # In[8]:
 
 
@@ -315,6 +342,8 @@ squareLength = [int(cities[i][5]) for i in range(len(cities))]
 trainSize = [int(cities[i][6]) for i in range(len(cities))]
 testSize = [int(cities[i][7]) for i in range(len(cities))]
 allIndex = list()
+
+# 划分 训练集 和 测试集
 for i in range(0,len(cities)):
     # get train
     fullList = list(range(squareLength[i] * squareLength[i]))
@@ -339,13 +368,13 @@ distance = 500
 
 # In[10]:
 
-
+# 消除自环
 def clearSameNodeEdge(edgeInfo):
     newEdgeInfo = list()
     for i in range(len(edgeInfo)):
         start = edgeInfo[i][0]
         end = edgeInfo[i][1]
-        if start != end:
+        if start != end:    
             newEdgeInfo.append(edgeInfo[i])
     return newEdgeInfo
 
@@ -353,7 +382,6 @@ def clearSameNodeEdge(edgeInfo):
 # # part 4: training data
 
 # In[11]:
-
 
 start0 = timeit.default_timer()
 countReal = 0
@@ -382,7 +410,7 @@ for i in range(0,len(cities)):
         count += 1
         #distance = random.randint(min,max)
         try :
-            G1 = ox.graph_from_point(location1, distance=distance, distance_type='bbox', network_type='drive') 
+            G1 = ox.graph_from_point(location1, dist=distance, dist_type='bbox', network_type='drive') 
         except:
             print ("the graph is null")
         else:
@@ -419,6 +447,7 @@ for i in range(0,len(cities)):
         stop2 = timeit.default_timer()
         print('running time until now:', stop2 - start0)
         print ("========================================================")
+
 stop0 = timeit.default_timer()
 print('total running time:', stop0 - start0)
 
