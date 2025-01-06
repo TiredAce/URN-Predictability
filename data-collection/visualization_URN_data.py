@@ -26,13 +26,13 @@ def get_args():
     parser.add_argument(
         "-cn", "--cite_name",
         type = str,
-        default = "Tokyo",
+        default = "New york",
     )
 
     parser.add_argument(
         "-bi", "--block_index",
         type = int,
-        default= 177,
+        default= 3,
     )
 
     parser.add_argument(
@@ -59,7 +59,14 @@ def load_json_file(file_path):
         if not isinstance(data, list):
             raise ValueError(f"Expected a list in the JSON file, but got {type(data)}")
         return data
-
+    
+def mkdir(path):
+    folder = os.path.exists(path)
+    if not folder:                  
+        os.makedirs(path)            
+        print('A new folder created.')
+    else:
+        print('Has already been created.')
 
 def get_graph_data(args):
     cite_name = args.cite_name
@@ -67,8 +74,8 @@ def get_graph_data(args):
     type = args.type
 
     # 构造文件路径
-    node_file = f"./{type}/{cite_name}{block_index}nodes.json"
-    edge_file = f"./{type}/{cite_name}{block_index}edges.json"
+    node_file = f"./{type}/{cite_name}/{cite_name}{block_index}nodes.json"
+    edge_file = f"./{type}/{cite_name}/{cite_name}{block_index}edges.json"
 
     # 判断文件是否存在
     if not os.path.exists(node_file) or not os.path.exists(edge_file):
@@ -96,6 +103,10 @@ if __name__ == "__main__":
     for edge in edge_dict:
         g.add_edge(edge["start"], edge["end"], edge["inSample1"], edge["inSample2"])
 
-    g.get_axialMap(save_path=args.save_src, type="freq")
+    pwd = args.save_src + args.cite_name + '/'
+
+    mkdir(pwd)
+
+    g.get_axialMap(save_path=pwd, type="freq")
     # step3. 绘制Graph地图并保存
     # g.plot(save_path=args.save_src)  # 将图保存到当前目录

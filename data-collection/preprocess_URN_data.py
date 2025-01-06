@@ -348,13 +348,13 @@ if __name__ == "__main__":
 
     fullList = list(range(squareLength * squareLength))
     train = getTrainIndex(squareLength)
-    random.shuffle(train)
+    # random.shuffle(train)
     test = list(set(fullList) - set(train))
-    random.shuffle(test)
-    allIndex = [train, test]
+    # random.shuffle(test)
+    allIndex = train + test
 
     pwd1 = args.save_src + "train/" + args.cite_name + "/"
-    pwd2 = args.save_src = "train/" + args.cite_name + "/"
+    pwd2 = args.save_src = "test/" + args.cite_name + "/"
 
     mkdir(pwd1)
     mkdir(pwd2)
@@ -373,11 +373,12 @@ if __name__ == "__main__":
     npd = squareLength
     dlat = 0.01    
     dlon = 0.01
+    count_train, count_test = 0, 0
     ################ collect training data ###############################    
     filename = pwd1 + args.cite_name          #!!!!change pwd1,2,3,4
-    for j1 in range(0,trainSize):             #!!!!change trainSize,validateSize,test1Size,test2Size
+    for j1 in range(0, len(allIndex)):             #!!!!change trainSize,validateSize,test1Size,test2Size
         start1 = timeit.default_timer()
-        j = allIndex[0][j1]                   #!!!!change 0,1,2,3
+        j = allIndex[j1]                   #!!!!change 0,1,2,3
         row = math.floor(j/npd)
         col = np.mod(j,npd)
         lat1 = lat - 0.500*LAT + row*dlat*1.000
@@ -418,6 +419,10 @@ if __name__ == "__main__":
                     edges = edges2dict(edgeFinal)
                     json.dump(edges,edgefile)
                     edgefile.close()
+                    if j < trainSize:
+                        count_train += 1
+                    else:
+                        count_test += 1
                     countReal += 1
         print ("count",count,"      countReal",countReal)
         stop1 = timeit.default_timer()
@@ -426,71 +431,7 @@ if __name__ == "__main__":
         print('running time until now:', stop2 - start0)
         print ("========================================================")
 
-        stop0 = timeit.default_timer()
-        print('total running time:', stop0 - start0)
 
-        start0 = timeit.default_timer()
-        countReal = 0
-        count = 0
-        # find the latitude and longitude of the city 
-        lat = args.lat
-        lon = args.lon
-        location = (lat,lon)   
-        LAT = squareLength*0.01     #longitude, latitude range
-        LON = LAT 
-        npd = squareLength
-        dlat = 0.01    
-        dlon = 0.01
-        ################ collect training data ###############################    
-        filename = pwd2 + args.cite_name                #!!!!change pwd1,2,3,4
-        for j1 in range(0,testSize):             #!!!!change trainSize,validateSize,test1Size,test2Size
-            start1 = timeit.default_timer()
-            j = allIndex[1][j1]                   #!!!!change 0,1,2,3
-            row = math.floor(j/npd)
-            col = np.mod(j,npd)
-            lat1 = lat - 0.500*LAT + row*dlat*1.000
-            lon1 = lon - 0.500*LON + col*dlon*1.000
-            location1 = [lat1,lon1]
-            print ("location1", location1)
-            count += 1
-            try :
-                G1 = ox.graph_from_point(location1, distance=distance, distance_type='bbox', network_type='drive') 
-            except:
-                print ("the graph is null")
-            else:
-                G1 = ox.project_graph(G1)
-                if (len(G1)>10):
-                    # merge the node
-                    mergeResult = OSMnx_graph(G1)
-                    nodeFinal = mergeResult[0]
-                    rawEdgeFinal = mergeResult[1]
-                    print ("len(rawEdgeFinal)",len(rawEdgeFinal))
-                    rawEdgeFinal = clearSameNodeEdge(rawEdgeFinal)
-                    print ("len(rawEdgeFina)",len(rawEdgeFinal))
-                    #test whether it is ok to sample, edge num > 1.26 node num
-                    realEdgeFinal = [(rawEdgeFinal[p][0],rawEdgeFinal[p][1]) for p in range(len(rawEdgeFinal))]
-                    realEdgeFianl = list(set(realEdgeFinal))
-                    if len(realEdgeFianl) > 1.26*len(nodeFinal):
-                        edgeFinal = sample(nodeFinal,rawEdgeFinal)
-                        subfile = filename + str(j) +'nodes'+'.json'
-                        nodefile = open(subfile,'w')
-                        nodes = nodes2dict(nodeFinal)
-                        json.dump(nodes,nodefile)
-                        nodefile.close()
-
-                        # save edges as a json file
-                        subfile = filename + str(j) +'edges'+'.json'
-                        edgefile = open(subfile,'w')
-                        edges = edges2dict(edgeFinal)
-                        json.dump(edges,edgefile)
-                        edgefile.close()
-                        countReal += 1
-            print ("count",count,"      countReal",countReal)
-            stop1 = timeit.default_timer()
-            print('running time per iteration:', stop1 - start1)
-            stop2 = timeit.default_timer()
-            print('running time until now:', stop2 - start0)
-            print ("========================================================")
-        stop0 = timeit.default_timer()
-        print('running time per iteration:', stop0 - start0)
+    stop0 = timeit.default_timer()
+    print('total running time:', stop0 - start0)
 

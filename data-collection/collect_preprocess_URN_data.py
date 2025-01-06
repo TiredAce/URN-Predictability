@@ -403,7 +403,6 @@ for i in range(0,len(cities)):
             print ("the graph is null")
         else:
             G1 = ox.project_graph(G1)
-            break
             if (len(G1)>10): 
                 # merge the node
                 graphResult = OSMnx_graph(G1)

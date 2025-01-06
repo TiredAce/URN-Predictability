@@ -197,8 +197,8 @@ class Graph:
         # 绘制图
         fig, ax = ox.plot_graph(
             G,
-            node_color="red",
-            node_size=10,
+            node_color="black",
+            node_size=20,
             edge_linewidth=2,
             edge_color = color if color_dict is not None else "blue",
             bgcolor = "white",
