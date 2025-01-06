@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import math
 import random
 import json
@@ -19,14 +13,55 @@ import matplotlib.cm as cm
 from math import sin, cos, sqrt, atan2,radians
 import matplotlib.colors as colors
 ox.settings.log_console = True
-
-# # part 1: functions
-
-# In[2]:
-
-
 import os
-# create a folder if necessary
+import argparse
+
+def get_args():
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "-cn", "--cite_name",
+        type = str,
+        default = "New york",
+    )
+
+    parser.add_argument(
+        "-lat",
+        type = float,
+        default = 40.73
+    )
+
+    parser.add_argument(
+        "-lon",
+        type = float,
+        default= -73.94,
+    )
+
+    parser.add_argument(
+        "--squareLength",
+        type = int, 
+        default = 20
+    )
+
+    parser.add_argument(
+        "--trainSize",
+        type = int, 
+        default=300,
+    )
+
+    parser.add_argument(
+        "--testSize",
+        type = int,
+        default = 100,
+    )
+
+    parser.add_argument(
+        "--save_src",
+        type = str,
+        default = "./"
+    )
+
+    return parser.parse_args()
+
 def mkdir(path):
     folder = os.path.exists(path)
     if not folder:                  
@@ -35,7 +70,7 @@ def mkdir(path):
     else:
         print('Has already been created.')
 
-def edges2dict(edgeFinal): # 
+def edges2dict(edgeFinal): 
     dicts = []
     n = len(edgeFinal)
     for i in range(0,n):
@@ -50,12 +85,6 @@ def nodes2dict(nodeFinal):
         dict1 = {'osmid': int(nodeFinal[i][0]), 'lon': nodeFinal[i][1],'lat':nodeFinal[i][2]}
         dicts.append(dict1)
     return dicts
-
-
-# # part 2: node merge
-
-# In[3]:
-
 
 # function 1 for node merge
 def distancePair(loc1,loc2):    #loc1:[lon1,lat1]; loc2:[lon2,lat2]
@@ -79,10 +108,6 @@ def neighborCell(nx,ny,x,y): # nx,ny: 100; x,y:0,1,2,...,100
             if xList[i]>=0 and xList[i]<=nx and yList[j]>=0 and yList[j]<= ny:
                 neighbor.append((xList[i],yList[j]))
     return neighbor
-
-
-# In[4]:
-
 
 # the input is G1 (drive) and G6 (all private), and we need to generate a G = G1.union(G6) 
 def OSMnx_graph(G1):  
@@ -225,9 +250,6 @@ def OSMnx_graph(G1):
     return [nodeFinalFinal,edgeFinalFinal]
 
 
-# In[5]:
-
-
 def sample(nodeInfor,edgeInfor):
     # step0: get the information
     nodeId = [nodeInfor[i][0] for i in range(len(nodeInfor))]
@@ -294,22 +316,6 @@ def sample(nodeInfor,edgeInfor):
     return returnEdgeInforNew
 
 
-# # part 3: main function
-
-# In[6]:
-
-
-cities=[]
-f = open( "./world_city_20200715.txt", "r" )
-for line in f.readlines():
-    linestr = line.strip()
-    linestrlist = linestr.split("\t")
-    cities.append(linestrlist)
-
-
-# In[7]:
-
-
 def getTrainIndex(n): #the input region is a n by n region.
     trainIndex = list()
     for i in range(n*n):
@@ -318,41 +324,6 @@ def getTrainIndex(n): #the input region is a n by n region.
         if row%2 == 0 or col%2 == 0:
             trainIndex.append(i)
     return trainIndex
-
-
-
-# In[8]:
-
-
-squareLength = [int(cities[i][5]) for i in range(len(cities))]
-trainSize = [int(cities[i][6]) for i in range(len(cities))]
-testSize = [int(cities[i][7]) for i in range(len(cities))]
-allIndex = list()
-
-# 划分 训练集 和 测试集
-for i in range(0,len(cities)):
-    # get train
-    fullList = list(range(squareLength[i] * squareLength[i]))
-    train = getTrainIndex(squareLength[i])
-    random.shuffle(train)
-    # get test
-    test = list(set(fullList) - set(train))
-    random.shuffle(test)
-    allIndex.append([train,test])
-
-
-# In[9]:
-
-
-pwd1 = './train/'
-pwd2 = './test/'
-mkdir(pwd1)
-mkdir(pwd2)
-# range of distance
-distance = 500
-
-
-# In[10]:
 
 # 消除自环
 def clearSameNodeEdge(edgeInfo):
@@ -365,35 +336,53 @@ def clearSameNodeEdge(edgeInfo):
     return newEdgeInfo
 
 
-# # part 4: training data
 
-# In[11]:
+if __name__ == "__main__":
+    
+    args = get_args()
 
-start0 = timeit.default_timer()
-countReal = 0
-count = 0
-for i in range(0,len(cities)):
-    # find the latitude and longitude of the city 
-    lat = float(cities[i][3])
-    lon = float(cities[i][4])
+    squareLength = args.squareLength
+    trainSize = args.trainSize
+    testSize = args.testSize
+    allIndex = list()
+
+    fullList = list(range(squareLength * squareLength))
+    train = getTrainIndex(squareLength)
+    random.shuffle(train)
+    test = list(set(fullList) - set(train))
+    random.shuffle(test)
+    allIndex = [train, test]
+
+    pwd1 = args.save_src + "train/" + args.cite_name + "/"
+    pwd2 = args.save_src = "train/" + args.cite_name + "/"
+
+    mkdir(pwd1)
+    mkdir(pwd2)
+
+    distance = 500
+
+    start0 = timeit.default_timer()
+    countReal = 0
+    count = 0
+
+    lat = args.lat
+    lon = args.lon
     location = (lat,lon)   
-    LAT = squareLength[i]*0.01     #longitude, latitude range
+    LAT = squareLength*0.01     #longitude, latitude range
     LON = LAT 
-    npd = squareLength[i]
+    npd = squareLength
     dlat = 0.01    
     dlon = 0.01
     ################ collect training data ###############################    
-    filename = pwd1 + cities[i][1]               #!!!!change pwd1,2,3,4
-    for j1 in range(0,trainSize[i]):             #!!!!change trainSize,validateSize,test1Size,test2Size
+    filename = pwd1 + args.cite_name          #!!!!change pwd1,2,3,4
+    for j1 in range(0,trainSize):             #!!!!change trainSize,validateSize,test1Size,test2Size
         start1 = timeit.default_timer()
-        j = allIndex[i][0][j1]                   #!!!!change 0,1,2,3
+        j = allIndex[0][j1]                   #!!!!change 0,1,2,3
         row = math.floor(j/npd)
         col = np.mod(j,npd)
         lat1 = lat - 0.500*LAT + row*dlat*1.000
         lon1 = lon - 0.500*LON + col*dlon*1.000
         location1 = [lat1,lon1]
-        print(location1)
-        location1 = [40.669999999999995, -74.02]
         print ("location1", location1)
         count += 1
         #distance = random.randint(min,max)
@@ -402,8 +391,8 @@ for i in range(0,len(cities)):
         except:
             print ("the graph is null")
         else:
+            
             G1 = ox.project_graph(G1)
-            break
             if (len(G1)>10): 
                 # merge the node
                 graphResult = OSMnx_graph(G1)
@@ -437,84 +426,71 @@ for i in range(0,len(cities)):
         print('running time until now:', stop2 - start0)
         print ("========================================================")
 
-stop0 = timeit.default_timer()
-print('total running time:', stop0 - start0)
+        stop0 = timeit.default_timer()
+        print('total running time:', stop0 - start0)
 
+        start0 = timeit.default_timer()
+        countReal = 0
+        count = 0
+        # find the latitude and longitude of the city 
+        lat = args.lat
+        lon = args.lon
+        location = (lat,lon)   
+        LAT = squareLength*0.01     #longitude, latitude range
+        LON = LAT 
+        npd = squareLength
+        dlat = 0.01    
+        dlon = 0.01
+        ################ collect training data ###############################    
+        filename = pwd2 + args.cite_name                #!!!!change pwd1,2,3,4
+        for j1 in range(0,testSize):             #!!!!change trainSize,validateSize,test1Size,test2Size
+            start1 = timeit.default_timer()
+            j = allIndex[1][j1]                   #!!!!change 0,1,2,3
+            row = math.floor(j/npd)
+            col = np.mod(j,npd)
+            lat1 = lat - 0.500*LAT + row*dlat*1.000
+            lon1 = lon - 0.500*LON + col*dlon*1.000
+            location1 = [lat1,lon1]
+            print ("location1", location1)
+            count += 1
+            try :
+                G1 = ox.graph_from_point(location1, distance=distance, distance_type='bbox', network_type='drive') 
+            except:
+                print ("the graph is null")
+            else:
+                G1 = ox.project_graph(G1)
+                if (len(G1)>10):
+                    # merge the node
+                    mergeResult = OSMnx_graph(G1)
+                    nodeFinal = mergeResult[0]
+                    rawEdgeFinal = mergeResult[1]
+                    print ("len(rawEdgeFinal)",len(rawEdgeFinal))
+                    rawEdgeFinal = clearSameNodeEdge(rawEdgeFinal)
+                    print ("len(rawEdgeFina)",len(rawEdgeFinal))
+                    #test whether it is ok to sample, edge num > 1.26 node num
+                    realEdgeFinal = [(rawEdgeFinal[p][0],rawEdgeFinal[p][1]) for p in range(len(rawEdgeFinal))]
+                    realEdgeFianl = list(set(realEdgeFinal))
+                    if len(realEdgeFianl) > 1.26*len(nodeFinal):
+                        edgeFinal = sample(nodeFinal,rawEdgeFinal)
+                        subfile = filename + str(j) +'nodes'+'.json'
+                        nodefile = open(subfile,'w')
+                        nodes = nodes2dict(nodeFinal)
+                        json.dump(nodes,nodefile)
+                        nodefile.close()
 
-# # part 5 testing data
-
-# In[12]:
-
-
-start0 = timeit.default_timer()
-countReal = 0
-count = 0
-for i in range(0,len(cities)):
-    # find the latitude and longitude of the city 
-    lat = float(cities[i][3])
-    lon = float(cities[i][4])
-    location = (lat,lon)   
-    LAT = squareLength[i]*0.01     #longitude, latitude range
-    LON = LAT 
-    npd = squareLength[i]
-    dlat = 0.01    
-    dlon = 0.01
-    ################ collect training data ###############################    
-    filename = pwd2 + cities[i][1]               #!!!!change pwd1,2,3,4
-    for j1 in range(0,testSize[i]):             #!!!!change trainSize,validateSize,test1Size,test2Size
-        start1 = timeit.default_timer()
-        j = allIndex[i][1][j1]                   #!!!!change 0,1,2,3
-        row = math.floor(j/npd)
-        col = np.mod(j,npd)
-        lat1 = lat - 0.500*LAT + row*dlat*1.000
-        lon1 = lon - 0.500*LON + col*dlon*1.000
-        location1 = [lat1,lon1]
-        print ("location1", location1)
-        count += 1
-        try :
-            G1 = ox.graph_from_point(location1, distance=distance, distance_type='bbox', network_type='drive') 
-        except:
-            print ("the graph is null")
-        else:
-            G1 = ox.project_graph(G1)
-            if (len(G1)>10):
-                # merge the node
-                mergeResult = OSMnx_graph(G1)
-                nodeFinal = mergeResult[0]
-                rawEdgeFinal = mergeResult[1]
-                print ("len(rawEdgeFinal)",len(rawEdgeFinal))
-                rawEdgeFinal = clearSameNodeEdge(rawEdgeFinal)
-                print ("len(rawEdgeFina)",len(rawEdgeFinal))
-                #test whether it is ok to sample, edge num > 1.26 node num
-                realEdgeFinal = [(rawEdgeFinal[p][0],rawEdgeFinal[p][1]) for p in range(len(rawEdgeFinal))]
-                realEdgeFianl = list(set(realEdgeFinal))
-                if len(realEdgeFianl) > 1.26*len(nodeFinal):
-                    edgeFinal = sample(nodeFinal,rawEdgeFinal)
-                    subfile = filename + str(j) +'nodes'+'.json'
-                    nodefile = open(subfile,'w')
-                    nodes = nodes2dict(nodeFinal)
-                    json.dump(nodes,nodefile)
-                    nodefile.close()
-
-                    # save edges as a json file
-                    subfile = filename + str(j) +'edges'+'.json'
-                    edgefile = open(subfile,'w')
-                    edges = edges2dict(edgeFinal)
-                    json.dump(edges,edgefile)
-                    edgefile.close()
-                    countReal += 1
-        print ("count",count,"      countReal",countReal)
-        stop1 = timeit.default_timer()
-        print('running time per iteration:', stop1 - start1)
-        stop2 = timeit.default_timer()
-        print('running time until now:', stop2 - start0)
-        print ("========================================================")
-stop0 = timeit.default_timer()
-print('running time per iteration:', stop0 - start0)
-
-
-# In[ ]:
-
-
-
+                        # save edges as a json file
+                        subfile = filename + str(j) +'edges'+'.json'
+                        edgefile = open(subfile,'w')
+                        edges = edges2dict(edgeFinal)
+                        json.dump(edges,edgefile)
+                        edgefile.close()
+                        countReal += 1
+            print ("count",count,"      countReal",countReal)
+            stop1 = timeit.default_timer()
+            print('running time per iteration:', stop1 - start1)
+            stop2 = timeit.default_timer()
+            print('running time until now:', stop2 - start0)
+            print ("========================================================")
+        stop0 = timeit.default_timer()
+        print('running time per iteration:', stop0 - start0)
 

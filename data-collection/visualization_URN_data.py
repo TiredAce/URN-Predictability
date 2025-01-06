@@ -19,6 +19,7 @@ import matplotlib.colors as colors
 import argparse
 import os
 from Graph import Graph
+ox.settings.log_console = True
 
 def get_args():
     parser = argparse.ArgumentParser()
