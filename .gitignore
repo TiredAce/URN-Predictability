@@ -1,7 +1,5 @@
 /data-collection/cache/
 /cache/
 /*.vscode
-/data-collection/test/
-/data-collection/train/
 /data-collection/*.rar
 

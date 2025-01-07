@@ -375,8 +375,8 @@ if __name__ == "__main__":
     dlon = 0.01
     count_train, count_test = 0, 0
     ################ collect training data ###############################    
-    filename = pwd1 + args.cite_name          #!!!!change pwd1,2,3,4
     for j1 in range(0, len(allIndex)):             #!!!!change trainSize,validateSize,test1Size,test2Size
+
         start1 = timeit.default_timer()
         j = allIndex[j1]                   #!!!!change 0,1,2,3
         row = math.floor(j/npd)
@@ -388,11 +388,12 @@ if __name__ == "__main__":
         count += 1
         #distance = random.randint(min,max)
         try :
-            G1 = ox.graph_from_point(location1, dist=distance, dist_type='bbox', network_type='drive') 
+            G1 = ox.graph_from_point(location1, dist=distance, dist_type='bbox', network_type='drive')
+            if len(G1.edges) == 0:  # 偶然会出现edge数量为0情况
+                continue 
         except:
             print ("the graph is null")
         else:
-            
             G1 = ox.project_graph(G1)
             if (len(G1)>10): 
                 # merge the node
@@ -406,6 +407,12 @@ if __name__ == "__main__":
                 realEdgeFinal =  [(rawEdgeFinal[p][0],rawEdgeFinal[p][1]) for p in range(len(rawEdgeFinal))]
                 realEdgeFinal = list(set(realEdgeFinal))
                 if len(realEdgeFinal) > 1.26*len(nodeFinal):
+                    if j1 < len(train):
+                        filename = pwd1 + args.cite_name
+                        count_train += 1
+                    else:
+                        filename = pwd2 + args.cite_name
+                        count_test += 1
                     edgeFinal = sample(nodeFinal,rawEdgeFinal)
                     subfile = filename + str(j) +'nodes'+'.json'
                     nodefile = open(subfile,'w')
@@ -419,10 +426,6 @@ if __name__ == "__main__":
                     edges = edges2dict(edgeFinal)
                     json.dump(edges,edgefile)
                     edgefile.close()
-                    if j < trainSize:
-                        count_train += 1
-                    else:
-                        count_test += 1
                     countReal += 1
         print ("count",count,"      countReal",countReal)
         stop1 = timeit.default_timer()
@@ -434,4 +437,6 @@ if __name__ == "__main__":
 
     stop0 = timeit.default_timer()
     print('total running time:', stop0 - start0)
+    
+    print(f"{args.cite_name} - trainSize: {count_train} . testSize: {testSize}")
 

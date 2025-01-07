@@ -38,7 +38,7 @@ class Graph:
         else:
             raise ValueError("One or both nodes not found in graph.")
         
-    def get_axialMap(self, save_path = None, type = "freq"):
+    def get_axialMap(self, plot = True, save_path = None, type = "freq"):
         osmid, lat, lon = [], [], []
         node2edge = dict()
         for nodeid in self.nodes.keys():
@@ -64,16 +64,27 @@ class Graph:
             v1 = (center_coor[0] - first_coor[0], center_coor[1] - first_coor[1])
             v2 = (second_coor[0] - center_coor[0], second_coor[1] - center_coor[1])
 
+            # 计算点积
             dot_product = v1[0] * v2[0] + v1[1] * v2[1]
-
+            
+            # 计算模长
             magnitude_v1 = math.sqrt(v1[0]**2 + v1[1]**2)
             magnitude_v2 = math.sqrt(v2[0]**2 + v2[1]**2)
-
+            
+            # 检查模长是否为零，防止除以零
+            if magnitude_v1 == 0 or magnitude_v2 == 0:
+                raise ValueError("One of the vectors has zero magnitude, cannot calculate angle.")
+            
+            # 计算 cos_theta
             cos_theta = dot_product / (magnitude_v1 * magnitude_v2)
-
+            
+            # 限制 cos_theta 在 [-1, 1] 范围内，避免浮点误差导致的异常
+            cos_theta = max(-1.0, min(1.0, cos_theta))
+            
+            # 计算角度
             angle_radians = math.acos(cos_theta)
             angle_degrees = math.degrees(angle_radians)
-
+            
             return angle_degrees
 
         def merge_color(edgeid1, edgeid2):
@@ -115,61 +126,95 @@ class Graph:
                     continue
                 matched[triplets[1]] = matched[triplets[2]] = 1
                 merge_color(info[triplets[1]][1], info[triplets[2]][1])
-        
-        def get_color(frequency, min_freq, max_freq):
-            # 归一化频率值到 [0, 1] 范围
-            normalized_freq = (frequency - min_freq) / (max_freq - min_freq) if max_freq != min_freq else 0.5
-            # 使用 viridis 色图映射颜色（更连贯的渐变）
-            colormap = plt.get_cmap('coolwarm')  # 选择 viridis 色图
-            color = colormap(normalized_freq)
-            return color
+    
+        # 是否进行展示
+        if plot:
+            def get_color(frequency, min_freq, max_freq):
+                # 归一化频率值到 [0, 1] 范围
+                normalized_freq = (frequency - min_freq) / (max_freq - min_freq) if max_freq != min_freq else 0.5
+                # 使用 viridis 色图映射颜色（更连贯的渐变）
+                colormap = plt.get_cmap('coolwarm')  # 选择 viridis 色图
+                color = colormap(normalized_freq)
+                return color
 
-        def generate_color_array_according_freq(arr):
-            # 1. 统计数字频率
-            freq = Counter(arr)
+            def generate_color_array_according_freq(arr):
+                # 1. 统计数字频率
+                freq = Counter(arr)
+                
+                # 2. 获取频率的最大值和最小值
+                min_freq = min(freq.values())
+                max_freq = max(freq.values())
+                            
+                color_array = [get_color(freq[num], min_freq, max_freq) for num in arr]
+                return color_array
+        
+            def generate_color_array_according_merge_edge(arr):
+                size = len(set(arr))
+                mapping = {}
+                cur_color = size
+                for col in arr:
+                    if col not in mapping:
+                        cur_color -= 1
+                        mapping[col] = cur_color
+                color_array = [["red" if mapping[num] == i else "blue" for num in arr] for i in range(size)]
+                return color_array
             
-            # 2. 获取频率的最大值和最小值
-            min_freq = min(freq.values())
-            max_freq = max(freq.values())
-                        
-            color_array = [get_color(freq[num], min_freq, max_freq) for num in arr]
-            return color_array
-        
-        def generate_color_array_according_merge_edge(arr):
-            size = len(set(arr))
-            mapping = {}
-            cur_color = size
-            for col in arr:
-                if col not in mapping:
-                    cur_color -= 1
-                    mapping[col] = cur_color
-            print(size)
-            color_array = [["red" if mapping[num] == i else "blue" for num in arr] for i in range(size)]
-            return color_array
-        
-        if type == "freq": 
-            color_final = generate_color_array_according_freq(color)
-            color_dict = dict()
-            for i in range(len(self.edges)):
-                if self.edges[i][0] < self.edges[i][1]:
-                    color_dict[(self.edges[i][0], self.edges[i][1])] = color_final[i]
-                else:
-                    color_dict[(self.edges[i][1], self.edges[i][0])] = color_final[i]
-            self.plot(save_path, color_dict)
-
-        elif type == "merge":
-            color_final = generate_color_array_according_merge_edge(color)
-            for _ in range(len(color_final)):
-                color = color_final[_]
+            if type == "freq": 
+                color_final = generate_color_array_according_freq(color)
                 color_dict = dict()
                 for i in range(len(self.edges)):
                     if self.edges[i][0] < self.edges[i][1]:
-                        color_dict[(self.edges[i][0], self.edges[i][1])] = color[i]
+                        color_dict[(self.edges[i][0], self.edges[i][1])] = color_final[i]
                     else:
-                        color_dict[(self.edges[i][1], self.edges[i][0])] = color[i]
-                self.plot(save_path, color_dict, self.graph_name + "-" + str(_))
-        else:
-            raise f"No '{type}' choice."
+                        color_dict[(self.edges[i][1], self.edges[i][0])] = color_final[i]
+                self.plot(save_path, color_dict)
+
+            elif type == "merge":
+                color_final = generate_color_array_according_merge_edge(color)
+                for _ in range(len(color_final)):
+                    color = color_final[_]
+                    color_dict = dict()
+                    for i in range(len(self.edges)):
+                        if self.edges[i][0] < self.edges[i][1]:
+                            color_dict[(self.edges[i][0], self.edges[i][1])] = color[i]
+                        else:
+                            color_dict[(self.edges[i][1], self.edges[i][0])] = color[i]
+                    self.plot(save_path, color_dict, self.graph_name + "-" + str(_))
+            else:
+                raise f"No '{type}' choice."
+
+        color2id = {}
+        self.axial_line = {}
+        self.intersection = []
+        cur_id = 0
+        for i in range(len(color)):
+            col = color[i]
+            if col not in color2id:
+                color2id[col] = cur_id
+                self.axial_line[cur_id] = []
+                cur_id += 1
+            
+            self.axial_line[color2id[col]].append(self.edges[i][0])
+            self.axial_line[color2id[col]].append(self.edges[i][1])
+        
+        for id, nodes in self.axial_line.items():
+            self.axial_line[id] = list(set(self.axial_line[id]))
+
+        for node, info in node2edge.items():
+            for edge_1 in range(len(info)):
+                for edge_2 in range(len(info)):
+                    edge_1_index = info[edge_1][1]
+                    edge_2_index = info[edge_2][1]
+                    edge_1_id = color2id[color[edge_1_index]]
+                    edge_2_id = color2id[color[edge_2_index]]
+                    if edge_1_id < edge_2_id:
+                        self.intersection.append((edge_1_id, edge_2_id))
+                    elif edge_2_id < edge_1_id:
+                        self.intersection.append((edge_2_id, edge_1_id))
+        self.intersection = list(set(self.intersection))
+
+        # print(self.intersection)
+        return [self.axial_line, self.intersection]
 
     def plot(self, save_path=None, color_dict = None, file_name = None):
         # Step1. 创建 nx.MultiGraph
