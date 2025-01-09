@@ -151,7 +151,7 @@ class VecTester():
 
 
 if __name__ == "__main__":
-    test = DataLoader('E:/python-workspace/CityRoadPrediction/data_20200610/test/')
-    test.load_dir_datas('Akron')
-    tester = VecTester(embed_dim=50, test_data=test, city='Akron')
+    test = DataLoader('./test/New york')
+    test.load_dir_datas('New york')
+    tester = VecTester(embed_dim=50, test_data=test, city='New york')
     print(test[0]['source_edges'])
