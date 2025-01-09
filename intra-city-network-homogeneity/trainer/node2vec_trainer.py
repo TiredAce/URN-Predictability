@@ -28,8 +28,8 @@ class Node2VecTrainer(VecTrainer):
 
 if __name__ == "__main__":
     data_dir = './'
-    train = DataLoader(data_dir + 'data/train/New york')
-    test = DataLoader(data_dir + 'data/test/New york')
+    train = DataLoader(data_dir + 'data/train/New york/')
+    test = DataLoader(data_dir + 'data/test/New york/')
 
     cities = set(train.cities) & set(test.cities)
     cities = sorted(list(cities))
@@ -43,7 +43,7 @@ if __name__ == "__main__":
         tester = VecTester(embed_dim=50, test_data=test, city=city, data_dir=data_dir + 'data/node2vec/')
         trainer = Node2VecTrainer(embed_dim=50, train_data=train, city=city, tester=tester)
         trainer.prepare_train_embedding(data_dir + 'data/node2vec/')
-        #trainer.train_distmult(data_dir=data_dir + 'data_2020715/node2vec/',
-        #                       result_dir=data_dir + 'data_20200715/node2vec/result/')
+        trainer.train_distmult(data_dir=data_dir + 'data/node2vec/',
+                               result_dir=data_dir + 'data/node2vec/result/')
 
 

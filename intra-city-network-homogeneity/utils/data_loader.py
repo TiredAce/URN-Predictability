@@ -97,7 +97,7 @@ class DataLoader():
             if attr == 'nodes':
                 self.data[city][id1]['nodes'] = data
                 self.data[city][id2]['nodes'] = data
-            else:
+            elif attr == 'edges':
                 for edge in data:
                     if edge['inSample1'] == 1:
                         self.data[city][id1]['source_edges'].append({
