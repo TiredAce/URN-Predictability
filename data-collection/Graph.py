@@ -213,6 +213,33 @@ class Graph:
                         self.intersection.append((edge_2_id, edge_1_id))
         self.intersection = list(set(self.intersection))
 
+        self.axial_line = [{"id": k, "osmids": v} for k, v in self.axial_line.items()]
+
+        # 计算最小生成树
+        A1 = np.array([[0] * cur_id] * cur_id)
+        AG = nx.Graph(A1)
+        
+        # 添加边
+        edgeSet = list()
+        for inter in self.intersection:
+            edgeSet.append((inter[0], inter[1]))
+        edgeSet = list(set(edgeSet))
+        AG.add_edges_from(edgeSet)
+
+        deleteNumber = int(len(AG.edges) * 0.20)
+
+        T = nx.minimum_spanning_tree(AG)
+        potentialDelete = list(set(AG.edges) - set(T.edges))
+
+        realDelete1 = random.sample(potentialDelete, deleteNumber)
+        realDelete2 = random.sample(potentialDelete, deleteNumber) 
+
+        self.intersection = [{"start": u,
+                               "end": v, 
+                               "inSample1": 0 if u in realDelete1 or v in realDelete1 else 1, 
+                              "inSample2": 0 if u in realDelete2 or v in realDelete2 else 1,
+                              } for u, v in self.intersection]
+
         # print(self.intersection)
         return [self.axial_line, self.intersection]
 

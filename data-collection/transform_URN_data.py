@@ -55,6 +55,14 @@ def load_json_file(file_path):
         if not isinstance(data, list):
             raise ValueError(f"Expected a list in the JSON file, but got {type(data)}")
         return data
+    
+def mkdir(path):
+    folder = os.path.exists(path)
+    if not folder:                  
+        os.makedirs(path)            
+        print('A new folder created.')
+    else:
+        print('Has already been created.')
 
 def transform(args, file_src, block_index):
     cite_name = args.cite_name
@@ -86,7 +94,7 @@ def transform(args, file_src, block_index):
 
     axial_line, intersection = g.get_axialMap(plot = False)
 
-    axial_line_file_name = f"{file_src}/{cite_name}/{cite_name}{block_index}axial_line.json"
+    axial_line_file_name = f"{file_src}/{cite_name}/{cite_name}{block_index}axial.json"
     intersection_file_name = f"{file_src}/{cite_name}/{cite_name}{block_index}intersection.json"
 
     axial_line_file = open(axial_line_file_name,'w')
